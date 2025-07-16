@@ -25,6 +25,28 @@ const myFunction = function () {
   console.log("Hello, Function");
 };
 
-console.log(typeof myFunction);
+// console.log(typeof myFunction);
 
-console.log(typeof obj);
+// console.log(typeof obj);
+
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// Stack (primitive) -> copy and Heap (non primitive) -> reference
+
+let youtubename = "hiteshchoudharydotcom";
+let anotherName = youtubename;
+anotherName = "chaiaurcode";
+
+console.log(anotherName);
+console.log(youtubename);
+
+let userOne = {
+  email: "user@google.com",
+  upi: "user@ybl",
+};
+
+let userTwo = userOne;
+
+userTwo.email = "hitesh@google.com";
+
+console.log(userOne.email);
+console.log(userTwo.email);
