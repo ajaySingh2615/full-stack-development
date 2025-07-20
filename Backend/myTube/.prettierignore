@@ -1,0 +1,14 @@
+/.vscode
+/node_modules
+/dist
+/build
+/public
+/src
+/test
+/docs
+/logs
+/cache
+
+*.env
+.env
+.env.*
