@@ -48,14 +48,9 @@ const registerUser = asyncHandler(async (req, res) => {
 
   // upload avatar and cover image to cloudinary
   const avatarLocalPath = req.files?.avatar?.[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar is required");
-  }
-
-  if (!coverImageLocalPath) {
-    throw new ApiError(400, "Cover image is required");
   }
 
   let avatar;
@@ -67,15 +62,6 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to upload avatar");
   }
 
-  let coverImage;
-  try {
-    coverImage = await uploadToCloudinary(coverImageLocalPath);
-    console.log("Uploaded cover image to cloudinary", coverImage);
-  } catch (error) {
-    console.log("Error uploading cover image", error);
-    throw new ApiError(500, "Failed to upload cover image");
-  }
-
   try {
     const user = await User.create({
       fullname,
@@ -83,7 +69,6 @@ const registerUser = asyncHandler(async (req, res) => {
       username: username.toLowerCase(),
       password,
       avatar: avatar.url,
-      coverImage: coverImage?.url || "",
     });
 
     const createdUser = await User.findById(user._id).select(
@@ -101,9 +86,6 @@ const registerUser = asyncHandler(async (req, res) => {
     console.log("user creation error", error);
     if (avatar) {
       await deleteFromCloudinary(avatar.public_id);
-    }
-    if (coverImage) {
-      await deleteFromCloudinary(coverImage.public_id);
     }
     throw new ApiError(500, "Failed to create user and image upload");
   }
