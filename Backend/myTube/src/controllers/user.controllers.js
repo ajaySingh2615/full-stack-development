@@ -102,14 +102,31 @@ const loginUser = asyncHandler(async (req, res) => {
   // get data from body
   const { email, password, username } = req.body;
 
+  console.log("Login request received:", {
+    email,
+    username,
+    hasPassword: !!password,
+  });
+
   // validation
   if (!email && !username) {
     throw new ApiError(400, "Email or username is required");
   }
 
+  // Convert username to lowercase if provided (since usernames are stored in lowercase)
+  const searchUsername = username ? username.toLowerCase() : undefined;
+  const searchEmail = email ? email.toLowerCase() : undefined;
+
+  console.log("Searching for user with:", { searchEmail, searchUsername });
+
   const user = await User.findOne({
-    $or: [{ email }, { username }],
+    $or: [
+      ...(searchEmail ? [{ email: searchEmail }] : []),
+      ...(searchUsername ? [{ username: searchUsername }] : []),
+    ],
   });
+
+  console.log("User found:", !!user);
 
   if (!user) {
     throw new ApiError(400, "Invalid email or username");

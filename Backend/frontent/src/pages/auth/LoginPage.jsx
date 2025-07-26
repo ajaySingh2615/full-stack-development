@@ -17,7 +17,21 @@ const LoginPage = () => {
   } = useForm();
 
   const onSubmit = async (data) => {
-    const result = await login(data);
+    // Determine if the input is an email or username
+    const isEmail = data.email.includes("@");
+
+    const loginData = {
+      password: data.password,
+      ...(isEmail ? { email: data.email } : { username: data.email }),
+    };
+
+    console.log("Login attempt:", {
+      originalInput: data.email,
+      isEmail,
+      loginData,
+    });
+
+    const result = await login(loginData);
     if (result.success) {
       navigate("/products");
     }
@@ -59,6 +73,10 @@ const LoginPage = () => {
                 <input
                   {...register("email", {
                     required: "Email or username is required",
+                    validate: (value) => {
+                      if (!value.trim()) return "Email or username is required";
+                      return true;
+                    },
                   })}
                   type="text"
                   className={`input-field pl-10 ${
