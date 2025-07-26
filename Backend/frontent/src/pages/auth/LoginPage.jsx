@@ -25,12 +25,6 @@ const LoginPage = () => {
       ...(isEmail ? { email: data.email } : { username: data.email }),
     };
 
-    console.log("Login attempt:", {
-      originalInput: data.email,
-      isEmail,
-      loginData,
-    });
-
     const result = await login(loginData);
     if (result.success) {
       navigate("/products");
