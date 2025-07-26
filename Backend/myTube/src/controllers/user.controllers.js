@@ -46,20 +46,20 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "User already exists");
   }
 
-  // upload avatar and cover image to cloudinary
+  // upload avatar to cloudinary (optional)
   const avatarLocalPath = req.files?.avatar?.[0]?.path;
+  let avatarUrl = null;
 
-  if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar is required");
-  }
-
-  let avatar;
-  try {
-    avatar = await uploadToCloudinary(avatarLocalPath);
-    console.log("Uploaded avatar to cloudinary", avatar);
-  } catch (error) {
-    console.log("Error uploading avatar", error);
-    throw new ApiError(500, "Failed to upload avatar");
+  if (avatarLocalPath) {
+    try {
+      const avatar = await uploadToCloudinary(avatarLocalPath);
+      console.log("Uploaded avatar to cloudinary", avatar);
+      avatarUrl = avatar.url;
+    } catch (error) {
+      console.log("Error uploading avatar", error);
+      // Don't fail registration if avatar upload fails
+      console.log("Continuing registration without avatar");
+    }
   }
 
   try {
@@ -68,7 +68,7 @@ const registerUser = asyncHandler(async (req, res) => {
       email,
       username: username.toLowerCase(),
       password,
-      avatar: avatar.url,
+      ...(avatarUrl && { avatar: avatarUrl }),
     });
 
     const createdUser = await User.findById(user._id).select(
@@ -84,10 +84,17 @@ const registerUser = asyncHandler(async (req, res) => {
       .json(new ApiResponse(201, "User created successfully", createdUser));
   } catch (error) {
     console.log("user creation error", error);
-    if (avatar) {
-      await deleteFromCloudinary(avatar.public_id);
+    // Clean up uploaded avatar if user creation fails
+    if (avatarUrl) {
+      try {
+        // Extract public_id from the avatar URL to delete from cloudinary
+        const publicId = avatarUrl.split("/").pop().split(".")[0];
+        await deleteFromCloudinary(publicId);
+      } catch (cleanupError) {
+        console.log("Error cleaning up avatar:", cleanupError);
+      }
     }
-    throw new ApiError(500, "Failed to create user and image upload");
+    throw new ApiError(500, "Failed to create user");
   }
 });
 
@@ -212,4 +219,18 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-export { registerUser, loginUser, refreshAccessToken, logoutUser };
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, req.user, "Current user retrieved successfully")
+    );
+});
+
+export {
+  registerUser,
+  loginUser,
+  refreshAccessToken,
+  logoutUser,
+  getCurrentUser,
+};
