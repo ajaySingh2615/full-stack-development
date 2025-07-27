@@ -6,7 +6,9 @@ const userSchema = new Schema(
   {
     username: {
       type: String,
-      required: true,
+      required: function () {
+        return !this.googleId;
+      }, // Required only if not Google user
       unique: true,
       lowercase: true,
       trim: true,
@@ -31,7 +33,14 @@ const userSchema = new Schema(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: function () {
+        return !this.googleId;
+      }, // Required only if not Google user
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true, //Allows multiple null values
     },
     refreshToken: {
       type: String,
