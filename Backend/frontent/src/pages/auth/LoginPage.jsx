@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { Eye, EyeOff, Mail, Lock, Leaf } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
+import GoogleSignIn from "../../pages/auth/GoogleSignIn";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -17,7 +18,6 @@ const LoginPage = () => {
   } = useForm();
 
   const onSubmit = async (data) => {
-    // Determine if the input is an email or username
     const isEmail = data.email.includes("@");
 
     const loginData = {
@@ -142,6 +142,21 @@ const LoginPage = () => {
               {isLoading ? <LoadingSpinner size="small" text="" /> : "Sign In"}
             </button>
           </div>
+
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-natural-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-natural-500">
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          {/* Google Sign-In */}
+          <GoogleSignIn />
 
           {/* Register Link */}
           <div className="text-center">
