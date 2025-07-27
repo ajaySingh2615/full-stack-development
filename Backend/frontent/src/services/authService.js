@@ -6,6 +6,7 @@ const AUTH_ENDPOINTS = {
   LOGOUT: "/users/logout",
   REFRESH_TOKEN: "/users/refresh-token",
   CURRENT_USER: "/users/current",
+  GOOGLE_SIGNIN: "/users/google-signin",
 };
 
 class AuthService {
@@ -41,6 +42,23 @@ class AuthService {
       };
     } catch (error) {
       console.error("Login error:", error);
+      throw error;
+    }
+  }
+
+  async googleLogin(accessToken) {
+    try {
+      const response = await apiClient.post(AUTH_ENDPOINTS.GOOGLE_SIGNIN, {
+        idToken: accessToken,
+      });
+
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message,
+      };
+    } catch (error) {
+      console.error("Google login error:", error);
       throw error;
     }
   }
