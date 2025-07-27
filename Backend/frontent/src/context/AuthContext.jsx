@@ -132,6 +132,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const googleLogin = async (accessToken) => {
+    try {
+      setIsLoading(true);
+      const result = await authService.googleLogin(accessToken);
+
+      if (result.success) {
+        setUser(result.data.user);
+        setIsAuthenticated(true);
+        localStorage.setItem("wasAuthenticated", "true");
+        return { success: true };
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Google login failed");
+      return { success: false };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const value = {
     user,
     isLoading,
@@ -139,6 +158,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    googleLogin,
     refreshToken,
     checkAuthStatus,
   };
