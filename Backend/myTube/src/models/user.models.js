@@ -6,7 +6,9 @@ const userSchema = new Schema(
   {
     username: {
       type: String,
-      required: true,
+      required: function () {
+        return !this.googleId;
+      }, // Required only if not Google user
       unique: true,
       lowercase: true,
       trim: true,
@@ -27,20 +29,18 @@ const userSchema = new Schema(
     },
     avatar: {
       type: String, // cloudinary url
-      required: true,
+      required: false,
     },
-    coverImage: {
-      type: String, // cloudinary url
-    },
-    watchHistory: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Video",
-      },
-    ],
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: function () {
+        return !this.googleId;
+      }, // Required only if not Google user
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true, //Allows multiple null values
     },
     refreshToken: {
       type: String,
@@ -54,7 +54,7 @@ const userSchema = new Schema(
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
-  this.password = bcrypt.hash(this.password, 10);
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
@@ -77,7 +77,7 @@ userSchema.methods.generateAccessToken = function () {
 };
 
 userSchema.methods.generateRefreshToken = function () {
-  // short lived access token
+  // long lived access token
   return jwt.sign(
     {
       _id: this._id,

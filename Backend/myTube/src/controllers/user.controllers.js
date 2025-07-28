@@ -46,34 +46,20 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "User already exists");
   }
 
-  // upload avatar and cover image to cloudinary
+  // upload avatar to cloudinary (optional)
   const avatarLocalPath = req.files?.avatar?.[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
+  let avatarUrl = null;
 
-  if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar is required");
-  }
-
-  if (!coverImageLocalPath) {
-    throw new ApiError(400, "Cover image is required");
-  }
-
-  let avatar;
-  try {
-    avatar = await uploadToCloudinary(avatarLocalPath);
-    console.log("Uploaded avatar to cloudinary", avatar);
-  } catch (error) {
-    console.log("Error uploading avatar", error);
-    throw new ApiError(500, "Failed to upload avatar");
-  }
-
-  let coverImage;
-  try {
-    coverImage = await uploadToCloudinary(coverImageLocalPath);
-    console.log("Uploaded cover image to cloudinary", coverImage);
-  } catch (error) {
-    console.log("Error uploading cover image", error);
-    throw new ApiError(500, "Failed to upload cover image");
+  if (avatarLocalPath) {
+    try {
+      const avatar = await uploadToCloudinary(avatarLocalPath);
+      console.log("Uploaded avatar to cloudinary", avatar);
+      avatarUrl = avatar.url;
+    } catch (error) {
+      console.log("Error uploading avatar", error);
+      // Don't fail registration if avatar upload fails
+      console.log("Continuing registration without avatar");
+    }
   }
 
   try {
@@ -82,8 +68,7 @@ const registerUser = asyncHandler(async (req, res) => {
       email,
       username: username.toLowerCase(),
       password,
-      avatar: avatar.url,
-      coverImage: coverImage?.url || "",
+      ...(avatarUrl && { avatar: avatarUrl }),
     });
 
     const createdUser = await User.findById(user._id).select(
@@ -99,13 +84,17 @@ const registerUser = asyncHandler(async (req, res) => {
       .json(new ApiResponse(201, "User created successfully", createdUser));
   } catch (error) {
     console.log("user creation error", error);
-    if (avatar) {
-      await deleteFromCloudinary(avatar.public_id);
+    // Clean up uploaded avatar if user creation fails
+    if (avatarUrl) {
+      try {
+        // Extract public_id from the avatar URL to delete from cloudinary
+        const publicId = avatarUrl.split("/").pop().split(".")[0];
+        await deleteFromCloudinary(publicId);
+      } catch (cleanupError) {
+        console.log("Error cleaning up avatar:", cleanupError);
+      }
     }
-    if (coverImage) {
-      await deleteFromCloudinary(coverImage.public_id);
-    }
-    throw new ApiError(500, "Failed to create user and image upload");
+    throw new ApiError(500, "Failed to create user");
   }
 });
 
@@ -118,8 +107,15 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Email or username is required");
   }
 
+  // Convert username to lowercase if provided (since usernames are stored in lowercase)
+  const searchUsername = username ? username.toLowerCase() : undefined;
+  const searchEmail = email ? email.toLowerCase() : undefined;
+
   const user = await User.findOne({
-    $or: [{ email }, { username }],
+    $or: [
+      ...(searchEmail ? [{ email: searchEmail }] : []),
+      ...(searchUsername ? [{ username: searchUsername }] : []),
+    ],
   });
 
   if (!user) {
@@ -230,4 +226,18 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-export { registerUser, loginUser, refreshAccessToken, logoutUser };
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, req.user, "Current user retrieved successfully")
+    );
+});
+
+export {
+  registerUser,
+  loginUser,
+  refreshAccessToken,
+  logoutUser,
+  getCurrentUser,
+};
